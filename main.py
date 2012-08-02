@@ -1,11 +1,25 @@
 #!/usr/bin/env python
 import logging, subprocess, sys
 from time import sleep
+from sqlalchemy import create_engine, MetaData, Column, Table, ForeignKey, Integer, String
 
 
+# Logging configuration
 logging.basicConfig()
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
+
+# Database configuration
+engine = create_engine('sqlite:///windowlog.db', echo=True)
+metadata = MetaData(bind=engine)
+	
+windowlog = Table('windowlog', metadata,
+		  Column('moment', Integer, primary_key=True),
+		  Column('windowname', String(40)))
+
+metadata.create_all()
+connection = engine.connect()
+
 
 class window :
 	def __init__(self) :
@@ -95,3 +109,6 @@ if __name__ == "__main__" :
 			logger.info('Windowlog exited ...')
 			sys.exit(0)
 
+
+	#newdata = windowlog.insert().values(moment = 201201012010, windowname = 'test')
+	#connection.execute(newdata)
