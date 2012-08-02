@@ -34,7 +34,7 @@ class window :
 		cmd = "xprop -root | grep '_NET_ACTIVE_WINDOW(WINDOW)' | cut -d ' ' -f 5 | tr -d '\n'"
 		winIdOutput, winIdError = subprocess.Popen(cmd, shell = True, stdout = subprocess.PIPE, stderr = subprocess.PIPE).communicate()
 		logger.debug('winIdOutput : %s' % winIdOutput)
-		logger.debug('winIdError  : %s'  % winIdError)
+		logger.debug('winIdError  : %s' % winIdError)
 
 		if winIdError == '' :
 			logger.info('Current Window Id : %s' % winIdOutput)
@@ -46,7 +46,7 @@ class window :
 		cmd = "xwininfo -id %s | grep 'xwininfo: Window id:' | awk 'BEGIN {FS=\"\\\"\"}/xwininfo: Window     id/{print $2}' | tr -d '\n'" % id
 		winNameOutput, winNameError = subprocess.Popen(cmd, shell = True, stdout = subprocess.PIPE, stderr = subprocess.PIPE).communicate()
 		logger.debug('winNameOutput : %s ' % winNameOutput)
-		logger.debug('winNameError  : %s'   % winNameError )
+		logger.debug('winNameError  : %s'  % winNameError )
 
 		if winNameError == '' :
 			logger.info('Current Window Name : %s' % winNameOutput)
