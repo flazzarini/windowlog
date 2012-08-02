@@ -23,14 +23,16 @@ connection = engine.connect()
 
 class window :
 	def __init__(self) :
-		self.id   = self.getWindowId()
-		self.name = self.getWindowName(id)
-		self.pid  = self.getWindowPid(id)
-		self.bin  = self.getWindowBin(id)
+		self.id    = self.getWindowId()
+		self.oldid = self.id
+		self.name  = self.getWindowName(self.id)
+		self.pid   = self.getWindowPid(self.id)
+		self.bin   = self.getWindowBin(self.id)
 		logger.info('---> Window Class initialized <---')
 
 	def getWindowId(self) :
-		winIdOutput, winIdError = subprocess.Popen("xprop -root | grep '_NET_ACTIVE_WINDOW(WINDOW)' | cut -d ' ' -f 5 | tr -d '\n'", shell = True, stdout = subprocess.PIPE, stderr = subprocess.PIPE).communicate()
+		cmd = "xprop -root | grep '_NET_ACTIVE_WINDOW(WINDOW)' | cut -d ' ' -f 5 | tr -d '\n'"
+		winIdOutput, winIdError = subprocess.Popen(cmd, shell = True, stdout = subprocess.PIPE, stderr = subprocess.PIPE).communicate()
 		logger.debug('winIdOutput : %s' % winIdOutput)
 		logger.debug('winIdError  : %s'  % winIdError)
 
@@ -41,8 +43,8 @@ class window :
 			return None
 
 	def getWindowName(self, id) :
-		winNameOutput, winNameError = subprocess.Popen("xwininfo -id %s | grep 'xwininfo: Window id:' | awk 'BEGIN {FS=\"\\\"\"}/xwininfo: Window id/{print $2}' | tr -d '\n'" % id, \
-								shell = True, stdout = subprocess.PIPE, stderr = subprocess.PIPE).communicate()
+		cmd = "xwininfo -id %s | grep 'xwininfo: Window id:' | awk 'BEGIN {FS=\"\\\"\"}/xwininfo: Window     id/{print $2}' | tr -d '\n'" % id
+		winNameOutput, winNameError = subprocess.Popen(cmd, shell = True, stdout = subprocess.PIPE, stderr = subprocess.PIPE).communicate()
 		logger.debug('winNameOutput : %s ' % winNameOutput)
 		logger.debug('winNameError  : %s'   % winNameError )
 
@@ -53,7 +55,8 @@ class window :
 			return None
 	
 	def getWindowPid(self, id) :
-		winPidOutput, winPidError = subprocess.Popen("xprop -id %s | awk '/_NET_WM_PID\(CARDINAL\)/{ print $3 }' | tr -d '\n'" % id, shell = True, stdout = subprocess.PIPE, stderr = subprocess.PIPE).communicate()
+		cmd = "xprop -id %s | awk '/_NET_WM_PID\(CARDINAL\)/{ print $3 }' | tr -d '\n'" % id
+		winPidOutput, winPidError = subprocess.Popen(cmd, shell = True, stdout = subprocess.PIPE, stderr = subprocess.PIPE).communicate()
 		logger.debug('winPidOutput : %s ' % winPidOutput)
 		logger.debug('winPidError  : %s ' % winPidError)
 
@@ -64,7 +67,8 @@ class window :
 			return None
 
 	def getWindowBin(self, id) :
-		winBinOutput, winBinError = subprocess.Popen("xprop -id %s | awk '/WM_COMMAND\(STRING\)/{ print $4 }' | tr -d '\n'" % id, shell = True, stdout = subprocess.PIPE, stderr = subprocess.PIPE).communicate()
+		cmd = "xprop -id %s | awk '/WM_COMMAND\(STRING\)/{ print $4 }' | tr -d '\n'" % id
+		winBinOutput, winBinError = subprocess.Popen(cmd, shell = True, stdout = subprocess.PIPE, stderr = subprocess.PIPE).communicate()
 		logger.debug('winBinOutput : %s ' % winBinOutput)
 		logger.debug('winBinError  : %s ' % winBinError)
 
@@ -87,23 +91,45 @@ class window :
 	def getBin(self) :
 		return self.bin
 
+	def setId(self) :
+		self.id = self.getWindowId()
+
+	def setName(self) :
+		self.name = self.getWindowName(self.id)
+
+	def setPid(self) :
+		self.pid = self.getWindowPid(self.id)
+
+	def setBin(self) :
+		self.bin = self.getWindowBin(self.id)
+
+	def update(self) :
+		self.setId()
+		self.setName()
+		self.setPid()
+		self.setBin()
+		
+		if self.id != self.oldid :
+			logger.info('--> Window Changed <--')
+			self.oldid = self.id
+
 
 if __name__ == "__main__" :
 	
 	logger.info('Windowlog started ...')
 
+	w = window()
+
 	while True :
 		try :
-			# Initialize the window class
-			#  TODO __init__ should get the id of current window on initialization
-			w = window()
+			w.update()
 			#print w.getId()
 			#print w.getName()
 			#print w.getPid()
 			#print w.getBin()
-			w.getWindowName(w.getWindowId())
-			w.getWindowBin(w.getWindowId())
-			w.getWindowPid(w.getWindowId())
+			#w.getWindowName(w.getWindowId())
+			#w.getWindowBin(w.getWindowId())
+			#w.getWindowPid(w.getWindowId())
 			sleep(2)
 		except KeyboardInterrupt :
 			logger.info('Windowlog exited ...')
