@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 import logging, subprocess, sys
-from time import sleep
-from sqlalchemy import create_engine, MetaData, Column, Table, ForeignKey, Integer, String
-from uuid import uuid1
-
+from time     import sleep
+from datetime import datetime
+from uuid     import uuid1
+from sqlalchemy     import create_engine, MetaData
+from sqlalchemy.orm import sessionmaker
+from models         import Windowlog
 
 # Logging configuration
 logging.basicConfig()
@@ -14,11 +16,12 @@ logger.setLevel(logging.INFO)
 class window :
 	def __init__(self) :
 		logger.debug('---> Window Class initialized <---')
-		self.id    = self.getWindowId()
-		self.oldid = self.id
-		self.name  = self.getWindowName(self.id)
-		self.pid   = self.getWindowPid(self.id)
-		self.bin   = self.getWindowBin(self.id)
+		self.id      = self.getWindowId()
+		self.oldid   = self.id
+		self.name    = self.getWindowName(self.id)
+		self.pid     = self.getWindowPid(self.id)
+		self.bin     = self.getWindowBin(self.id)
+		self.changed = True
 		self.getInfo()
 
 	def getInfo(self) :
@@ -86,7 +89,7 @@ class window :
 
 	def getWindowScreenshot(self, id):
 		uuid = uuid1()	
-		cmd = "xwd -id %s -out /tmp/windowlog-%s.xwd && convert /tmp/windowlog-%s.xwd /tmp/windowlog-%s.png && rm -Rf /tmp/windowlog-%s.xwd" % (id, uuid, uuid, uuid, uuid)
+		cmd = "xwd -id %s -out /tmp/windowlog-%s.xwd && convert -scale 35%% /tmp/windowlog-%s.xwd /tmp/windowlog-%s.png && rm -Rf /tmp/windowlog-%s.xwd" % (id, uuid, uuid, uuid, uuid)
 		winScreenOut, winScreenError = subprocess.Popen(cmd, shell=True, stdout = subprocess.PIPE, stderr = subprocess.PIPE).communicate()
 		
 		logger.debug('cmd            : %s' % cmd)
@@ -106,6 +109,9 @@ class window :
 	def getBin(self) :
 		return self.bin
 
+	def getChanged(self) :
+		return self.changed
+
 	def setId(self) :
 		self.id = self.getWindowId()
 
@@ -118,17 +124,22 @@ class window :
 	def setBin(self) :
 		self.bin = self.getWindowBin(self.id)
 
+	def setChanged(self, value) :
+		self.changed = value
+
 	def update(self) :
 		self.setId()
 		self.setName()
 		self.setPid()
 		self.setBin()
+		self.setChanged(False)
 	
 		if self.id != self.oldid :
 			logger.info('--> Window Changed <--')
 			self.getInfo()
 			self.oldid = self.id
 			self.getWindowScreenshot(self.id)
+			self.setChanged(True)
 		
 
 if __name__ == "__main__" :
@@ -136,31 +147,20 @@ if __name__ == "__main__" :
 	logger.info('Windowlog started ...')
 	
 	# Database configuration
-	#engine = create_engine('sqlite:///windowlog.db', echo=True)
-	#metadata = MetaData(bind=engine)
-	#	
-	#windowlog = Table('windowlog', metadata,
-	#		  Column('moment', Integer, primary_key=True),
-	#		  Column('windowname', String(40)))
-	#
-	#metadata.create_all()
-	#connection = engine.connect()
-
-	#newdata = windowlog.insert().values(moment = 201201012010, windowname = 'test')
-	#connection.execute(newdata)
+	engine  = create_engine('sqlite:///windowlog.db', echo=False)
+	Session = sessionmaker(bind=engine)
+	session = Session()
 	
-	w = window()
+	window = window()
 
 	while True :
 		try :
-			w.update()
-			#print w.getId()
-			#print w.getName()
-			#print w.getPid()
-			#print w.getBin()
-			#w.getWindowName(w.getWindowId())
-			#w.getWindowBin(w.getWindowId())
-			#w.getWindowPid(w.getWindowId())
+			window.update()
+
+			if window.getChanged() :
+				windowlog = Windowlog( datetime.now(), unicode(window.getName(), errors='replace') )
+				session.add(windowlog)
+				session.commit()
 			sleep(2)
 		except KeyboardInterrupt :
 			logger.info('Windowlog exited ...')
