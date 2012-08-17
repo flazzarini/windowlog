@@ -67,6 +67,7 @@ class window :
 			return None
 
 	def getWindowBin(self, id) :
+		# @TODO sometimes binary is returned with quotes
 		cmd = "xprop -id %s | awk '/WM_COMMAND\(STRING\)/{ print $4 }' | tr -d '\n'" % id
 		winBinOutput, winBinError = subprocess.Popen(cmd, shell = True, stdout = subprocess.PIPE, stderr = subprocess.PIPE).communicate()
 		logger.debug('winBinOutput : %s ' % winBinOutput)

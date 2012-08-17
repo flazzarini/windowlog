@@ -1,7 +1,11 @@
+from sqlalchemy import *
 from sqlalchemy import Table, Column, DateTime, Integer, String, MetaData
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm             import sessionmaker, scoped_session
 
-Base = declarative_base()
+engine = create_engine('sqlite:///windowlog.db', echo=True)
+Base = declarative_base(bind=engine)
+Session = scoped_session(sessionmaker(engine))
 
 class Windowlog(Base) :
 
@@ -17,3 +21,4 @@ class Windowlog(Base) :
 	def __repr__(self) :
 		return "<Windowlog('%s', '%s')>" % (self.moment, self.windowname)
 
+Base.metadata.create_all()
