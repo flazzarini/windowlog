@@ -67,8 +67,7 @@ class window :
 			return None
 
 	def getWindowBin(self, id) :
-		# @TODO sometimes binary is returned with quotes
-		cmd = "xprop -id %s | awk '/WM_COMMAND\(STRING\)/{ print $4 }' | tr -d '\n'" % id
+		cmd = "xprop -id %s | awk '/WM_COMMAND\(STRING\)/{ print $4 }' | tr -d '\n' | tr -d '\"'" % id
 		winBinOutput, winBinError = subprocess.Popen(cmd, shell = True, stdout = subprocess.PIPE, stderr = subprocess.PIPE).communicate()
 		logger.debug('winBinOutput : %s ' % winBinOutput)
 		logger.debug('winBinError  : %s ' % winBinError)
@@ -159,7 +158,7 @@ if __name__ == "__main__" :
 			window.update()
 
 			if window.getChanged() :
-				windowlog = Windowlog( datetime.now(), unicode(window.getName(), errors='replace') )
+				windowlog = Windowlog( datetime.now(), unicode(window.getName(), errors='replace'), window.getPid(), window.getBin() )
 				session.add(windowlog)
 				session.commit()
 			sleep(2)
