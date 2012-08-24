@@ -16,11 +16,12 @@ logger.setLevel(logging.INFO)
 class window :
 	def __init__(self) :
 		logger.debug('---> Window Class initialized <---')
-		self.id      = self.getWindowId()
-		self.oldid   = self.id
-		self.name    = self.getWindowName(self.id)
-		self.pid     = self.getWindowPid(self.id)
-		self.bin     = self.getWindowBin(self.id)
+		self.id         = self.getWindowId()
+		self.oldid      = self.id
+		self.name       = self.getWindowName(self.id)
+		self.pid        = self.getWindowPid(self.id)
+		self.bin        = self.getWindowBin(self.id)
+		self.screenshot = self.getWindowScreenshot(self.id)
 		self.changed = True
 		self.getInfo()
 
@@ -75,7 +76,7 @@ class window :
 		# If empty try to find binary via pid
 		if winBinOutput == '' :
 			pid = self.getWindowPid(id)
-			cmd = "ps aux | grep %s | grep -v grep | awk '{ print $11 }' | tr -d '\n'" % pid
+			cmd = "ps aux | grep %s | grep -v grep | head -n 1 | awk '{ print $11 }' | tr -d '\n'" % pid
 			winBinOutput, winBinError = subprocess.Popen(cmd, shell=True, stdout = subprocess.PIPE, stderr = subprocess.PIPE).communicate()
 			logger.debug('winBinOutput : %s ' % winBinOutput)
 			logger.debug('winBinError  : %s ' % winBinError)
@@ -89,12 +90,16 @@ class window :
 
 	def getWindowScreenshot(self, id):
 		uuid = uuid1()	
-		cmd = "xwd -id %s -out /tmp/windowlog-%s.xwd && convert -scale 35%% /tmp/windowlog-%s.xwd /tmp/windowlog-%s.png && rm -Rf /tmp/windowlog-%s.xwd" % (id, uuid, uuid, uuid, uuid)
+		cmd = "xwd -id %s | convert xwd:- -scale 35%% /tmp/windowlog-%s.png" % (id, uuid)
 		winScreenOut, winScreenError = subprocess.Popen(cmd, shell=True, stdout = subprocess.PIPE, stderr = subprocess.PIPE).communicate()
 		
 		logger.debug('cmd            : %s' % cmd)
 		logger.debug('winScreenOut   : %s' % winScreenOut)
 		logger.debug('winScreenError : %s' % winScreenError)
+
+		# Read the data
+		f = open('/tmp/windowlog-%s.png' % (uuid))
+		return f.read()
 
 
 	def getId(self) :
@@ -108,6 +113,9 @@ class window :
 
 	def getBin(self) :
 		return self.bin
+
+	def getScreenshot(self) :
+		return self.screenshot
 
 	def getChanged(self) :
 		return self.changed
@@ -124,6 +132,9 @@ class window :
 	def setBin(self) :
 		self.bin = self.getWindowBin(self.id)
 
+	def setScreenshot(self) :
+		self.screenshot = self.getWindowScreenshot(self.id)
+
 	def setChanged(self, value) :
 		self.changed = value
 
@@ -138,7 +149,7 @@ class window :
 			logger.info('--> Window Changed <--')
 			self.getInfo()
 			self.oldid = self.id
-			self.getWindowScreenshot(self.id)
+			self.setScreenshot()
 			self.setChanged(True)
 		
 
@@ -158,7 +169,7 @@ if __name__ == "__main__" :
 			window.update()
 
 			if window.getChanged() :
-				windowlog = Windowlog( datetime.now(), unicode(window.getName(), errors='replace'), window.getPid(), window.getBin() )
+				windowlog = Windowlog( datetime.now(), unicode(window.getName(), errors='replace'), window.getPid(), window.getBin(), window.getScreenshot() )
 				session.add(windowlog)
 				session.commit()
 			sleep(2)
